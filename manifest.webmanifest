@@ -1,0 +1,12 @@
+{
+  "name": "Play Yellow Car",
+  "short_name": "Yellow Car",
+  "start_url": "./play/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f5c400",
+  "icons": [
+    {"src":"https://raw.githubusercontent.com/thestuminator/Yellow-Car/main/yellow-car-bmw.png","sizes":"any","type":"image/png","purpose":"any"}
+  ]
+}
