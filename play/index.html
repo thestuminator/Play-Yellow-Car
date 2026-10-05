@@ -1,0 +1,49 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f5c400"><title>Play — Yellow Car</title>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="stylesheet" href="../styles.css">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/thestuminator/Yellow-Car/main/yellow-car-bmw.png">
+</head><body>
+<div class="gamewrap">
+<div class="gamehead"><a class="brand" href="../"><span>PLAY YELLOW CAR</span></a><img class="mascot" src="https://raw.githubusercontent.com/thestuminator/Yellow-Car/main/yellow-car-bmw.png" alt="Yellow Car mascot"><div class="lead">Spot it. Say it. Score it.</div></div>
+<section id="setup" class="panel">
+<h2 style="font-size:34px">Who’s playing?</h2><div id="players"></div>
+<button id="addPlayer" class="btn btn-yellow" type="button">＋ Add player</button>
+<button id="start" class="btn btn-dark" style="width:100%;margin-top:18px" type="button">🚗 Start game</button>
+<div id="history" style="margin-top:18px"></div><p class="small">Player names, avatars, scores and trip history stay on this device.</p>
+</section>
+<section id="game" class="panel hidden">
+<div class="gamebar"><div><div id="total" class="total">0 yellow cars</div><div class="small">Ready when you are!</div></div><div id="timer" class="timer">00:00</div></div>
+<div id="scores"></div><div class="flex2"><button id="undo" class="btn" style="border:1px solid #ccc;background:#fff" type="button">↶ Undo</button><button id="finish" class="btn btn-dark" type="button">Finish trip</button></div><p class="small center">Passenger operates the game. Driver keeps eyes on the road.</p>
+</section>
+<section id="result" class="panel hidden"><div class="center" style="font-size:52px">🏆</div><h2 id="winner" class="center" style="font-size:36px"></h2><p id="summary" class="center lead"></p><div id="final"></div><button id="again" class="btn btn-dark" style="width:100%;margin-top:14px" type="button">🚗 Play again</button></section>
+<section id="feedback" class="panel feedback hidden"><h2 style="font-size:34px">Help us build Yellow Car</h2><p>We’re testing whether families enjoy this enough to turn it into a proper ad-free app.</p>
+<label>Did it make the trip more fun?</label><select id="fun"><option>Yes — definitely</option><option>A little</option><option>Not really</option></select>
+<label>Would you play again?</label><select id="againQ"><option>Yes</option><option>Maybe</option><option>No</option></select>
+<label>Would you pay a few dollars for a polished ad-free version?</label><select id="pay"><option>Yes</option><option>Maybe</option><option>No</option></select>
+<label>Anything else?</label><textarea id="comments" rows="4" placeholder="What did the family like? What should we improve?"></textarea>
+<a id="emailFeedback" class="btn btn-yellow" style="width:100%;margin-top:14px" href="#">Send feedback</a><p class="small">This opens your email app and sends only what you choose to write.</p></section>
+</div>
+<script>
+const $=s=>document.querySelector(s),PLAYER_KEY='pycPlayersV1',ACTIVE_KEY='pycActiveV1',HISTORY_KEY='pycTripsV1';
+const AVATARS=['👩','👨','👧','👦','👶','👵','👴','🧑','👱','👩‍🦰','👨‍🦱','🧔','👩‍🦳','👨‍🦳','😎','🤠','🦸','🧙','🐶','🐱','🦊','🐼','🐨','🐸'];
+let setupPlayers=[],players=[],hits=[],startTime=null,tick=null;
+const fmt=n=>{n=Math.max(0,Math.floor(n));return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')};
+const elapsed=()=>startTime?Math.floor((Date.now()-startTime)/1000):0,total=()=>players.reduce((n,p)=>n+p.score,0);
+function saveSetup(){localStorage.setItem(PLAYER_KEY,JSON.stringify(setupPlayers))}
+function loadSetup(){try{setupPlayers=JSON.parse(localStorage.getItem(PLAYER_KEY)||'[]')}catch{setupPlayers=[]}if(!setupPlayers.length)setupPlayers=[{name:'Player 1',avatar:'😎'},{name:'Player 2',avatar:'👩'}]}
+function renderSetup(){const box=$('#players');box.innerHTML='';setupPlayers.forEach((p,i)=>{const row=document.createElement('div');row.className='playerrow';const av=document.createElement('button');av.className='avatarbtn';av.type='button';av.textContent=p.avatar;av.addEventListener('click',()=>openAvatars(i,row));const inp=document.createElement('input');inp.className='nameinput';inp.value=p.name;inp.placeholder='Player name';inp.maxLength=24;inp.addEventListener('input',()=>{setupPlayers[i].name=inp.value;saveSetup()});const rem=document.createElement('button');rem.className='remove';rem.type='button';rem.textContent='×';rem.addEventListener('click',()=>{setupPlayers.splice(i,1);if(!setupPlayers.length)setupPlayers.push({name:'Player 1',avatar:'😎'});saveSetup();renderSetup()});row.append(av,inp,rem);box.append(row)})}
+function openAvatars(i,row){document.querySelectorAll('.avatargrid').forEach(x=>x.remove());const grid=document.createElement('div');grid.className='avatargrid';AVATARS.forEach(a=>{const b=document.createElement('button');b.type='button';b.textContent=a;b.addEventListener('click',()=>{setupPlayers[i].avatar=a;saveSetup();renderSetup()});grid.append(b)});row.after(grid)}
+$('#addPlayer').addEventListener('click',()=>{if(setupPlayers.length>=8)return alert('Eight players should be enough chaos for one car 😄');setupPlayers.push({name:'Player '+(setupPlayers.length+1),avatar:'🧑'});saveSetup();renderSetup()});
+function saveActive(){if(startTime)localStorage.setItem(ACTIVE_KEY,JSON.stringify({startTime,players,hits}))}function clearActive(){localStorage.removeItem(ACTIVE_KEY)}function updateTimer(){$('#timer').textContent=fmt(elapsed())}function startTicker(){clearInterval(tick);updateTimer();tick=setInterval(updateTimer,1000)}
+function showGame(){$('#setup').classList.add('hidden');$('#result').classList.add('hidden');$('#feedback').classList.add('hidden');$('#game').classList.remove('hidden');renderScores();startTicker()}
+function renderScores(){$('#total').textContent=total()+' yellow car'+(total()===1?'':'s');const box=$('#scores');box.innerHTML='';players.forEach((p,i)=>{const r=document.createElement('div');r.className='scoreline';const l=document.createElement('div');l.className='scoremeta';l.textContent=p.avatar+' '+p.name+' · '+p.score;const b=document.createElement('button');b.className='plus';b.type='button';b.textContent='+';b.addEventListener('click',()=>{p.score++;hits.push(i);saveActive();renderScores()});r.append(l,b);box.append(r)});$('#undo').disabled=!hits.length}
+$('#start').addEventListener('click',()=>{players=setupPlayers.map(p=>({name:(p.name||'Player').trim()||'Player',avatar:p.avatar,score:0}));if(!players.length)return;hits=[];startTime=Date.now();saveActive();showGame()});
+$('#undo').addEventListener('click',()=>{const i=hits.pop();if(i!==undefined&&players[i]?.score>0)players[i].score--;saveActive();renderScores()});
+$('#finish').addEventListener('click',()=>{clearInterval(tick);const duration=elapsed();$('#game').classList.add('hidden');$('#result').classList.remove('hidden');$('#feedback').classList.remove('hidden');const max=Math.max(...players.map(p=>p.score)),wins=players.filter(p=>p.score===max).map(p=>p.name);$('#winner').textContent=wins.length>1?'It’s a draw! 🎉':wins[0]+' wins! 🎉';$('#summary').textContent='You spotted '+total()+' yellow cars in '+fmt(duration)+'!';const f=$('#final');f.innerHTML='';players.forEach(p=>{const d=document.createElement('div');d.className='scoreline';d.innerHTML='<div class="scoremeta">'+p.avatar+' '+p.name+'</div><strong>'+p.score+'</strong>';f.append(d)});let h=[];try{h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]')}catch{}h.unshift({date:new Date().toLocaleDateString('en-AU'),winner:wins.length>1?'Draw':wins[0],total:total(),duration});localStorage.setItem(HISTORY_KEY,JSON.stringify(h.slice(0,30)));clearActive();showHistory()});
+$('#again').addEventListener('click',()=>{clearActive();location.reload()});
+function showHistory(){let h=[];try{h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]')}catch{}const box=$('#history');box.innerHTML=h.length?'<h3>Recent trips</h3>':'';h.slice(0,5).forEach(x=>{const d=document.createElement('div');d.style.padding='10px 0';d.style.borderTop='1px solid #eee';d.textContent=x.date+' — '+x.winner+' · '+x.total+' cars · '+fmt(x.duration);box.append(d)})}
+function restore(){try{const x=JSON.parse(localStorage.getItem(ACTIVE_KEY)||'null');if(!x?.startTime||!Array.isArray(x.players))return false;startTime=x.startTime;players=x.players;hits=Array.isArray(x.hits)?x.hits:[];showGame();return true}catch{clearActive();return false}}
+$('#emailFeedback').addEventListener('click',e=>{const body=['Play Yellow Car Beta Feedback','','More fun: '+$('#fun').value,'Play again: '+$('#againQ').value,'Pay a few dollars: '+$('#pay').value,'','Comments: '+$('#comments').value].join('\n');e.currentTarget.href='mailto:feedback@playyellowcar.com?subject='+encodeURIComponent('Play Yellow Car Beta Feedback')+'&body='+encodeURIComponent(body)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&startTime)updateTimer()});window.addEventListener('pageshow',()=>{if(startTime)updateTimer()});window.addEventListener('beforeunload',saveActive);
+loadSetup();renderSetup();showHistory();restore();if('serviceWorker'in navigator)navigator.serviceWorker.register('../sw.js');
+</script></body></html>
